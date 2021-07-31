@@ -1,11 +1,12 @@
-//! Auto generated profile messages from FIT SDK Release: 21.54.01
+//! Auto generated profile messages from FIT SDK Release: 21.60.00
 #![allow(missing_docs)]
 #![allow(clippy::redundant_field_names)]
 #![allow(clippy::unreadable_literal)]
 use super::field_types::*;
 use super::{ComponentFieldInfo, FieldDataType, FieldInfo, MessageInfo};
 use std::collections::HashMap;
-pub const VERSION: &str = "21.54.01";
+pub const VERSION: &str = "21.60.00";
+/// Must be first message in file.
 pub fn file_id_message() -> MessageInfo {
     let mut fields = HashMap::new();
     let field = FieldInfo {
@@ -8780,6 +8781,7 @@ pub fn device_info_message() -> MessageInfo {
         fields,
     }
 }
+/// Corresponds to file_id of workout or course.
 pub fn training_file_message() -> MessageInfo {
     let mut fields = HashMap::new();
     let field = FieldInfo {
@@ -8921,6 +8923,7 @@ pub fn training_file_message() -> MessageInfo {
         fields,
     }
 }
+/// Heart rate variability
 pub fn hrv_message() -> MessageInfo {
     let mut fields = HashMap::new();
     // Time between beats
@@ -11179,6 +11182,7 @@ pub fn course_point_message() -> MessageInfo {
         fields,
     }
 }
+/// Unique Identification data for a segment file
 pub fn segment_id_message() -> MessageInfo {
     let mut fields = HashMap::new();
     // Friendly name assigned to segment
@@ -11304,6 +11308,7 @@ pub fn segment_id_message() -> MessageInfo {
         fields,
     }
 }
+/// Unique Identification data for an individual segment leader within a segment file
 pub fn segment_leaderboard_entry_message() -> MessageInfo {
     let mut fields = HashMap::new();
     // Friendly name assigned to leader
@@ -11402,6 +11407,7 @@ pub fn segment_leaderboard_entry_message() -> MessageInfo {
         fields,
     }
 }
+/// Navigation and race evaluation point for a segment decribing a point along the segment path and time it took each segment leader to reach that point
 pub fn segment_point_message() -> MessageInfo {
     let mut fields = HashMap::new();
     let field = FieldInfo {
@@ -12642,6 +12648,7 @@ pub fn segment_lap_message() -> MessageInfo {
         fields,
     }
 }
+/// Summary of the unique segment and leaderboard information associated with a segment file. This message is used to compile a segment list file describing all segment files on a device. The segment list file is used when refreshing the contents of a segment file with the latest available leaderboard information.
 pub fn segment_file_message() -> MessageInfo {
     let mut fields = HashMap::new();
     // UUID of the segment file
@@ -14986,6 +14993,7 @@ pub fn hr_message() -> MessageInfo {
         fields,
     }
 }
+/// Value from 1 to 100 calculated by FirstBeat
 pub fn stress_level_message() -> MessageInfo {
     let mut fields = HashMap::new();
     let field = FieldInfo {
@@ -15786,6 +15794,7 @@ pub fn exd_data_concept_configuration_message() -> MessageInfo {
         fields,
     }
 }
+/// Must be logged before developer field is used
 pub fn field_description_message() -> MessageInfo {
     let mut fields = HashMap::new();
     let field = FieldInfo {
@@ -15962,6 +15971,7 @@ pub fn field_description_message() -> MessageInfo {
         fields,
     }
 }
+/// Must be logged before field description
 pub fn developer_data_id_message() -> MessageInfo {
     let mut fields = HashMap::new();
     let field = FieldInfo {

@@ -198,7 +198,7 @@ pub struct DeveloperFieldDefinition {
 
 /// Stores a vector of raw fields described by the preceding Definition message, a Definition message
 /// must come before any Data message. The data here will be transfomed into a FitDataRecord using
-/// the information from it's defintion message and the MessageInfo struct from the FIT profile
+/// the information from its defintion message and the MessageInfo struct from the FIT profile
 #[derive(Clone, Debug)]
 pub struct FitDataMessage {
     global_message_number: u16,
@@ -335,7 +335,7 @@ pub fn fit_message<'a>(
     match header.message_type {
         FitMessageType::Data => {
             if let Some(def_mesg) = definitions.get(&header.local_message_number) {
-                let (input, (fields, developer_fields)) = data_message_fields(input, &def_mesg)?;
+                let (input, (fields, developer_fields)) = data_message_fields(input, def_mesg)?;
                 Ok((
                     input,
                     FitMessage::Data(FitDataMessage {
@@ -561,7 +561,7 @@ fn data_field_value(
             }
             BaseType::String => {
                 bytes_consumed += size;
-                // consume the field as defined by it's size and then locate the first NUL byte
+                // consume the field as defined by its size and then locate the first NUL byte
                 // and ignore everything after it when converting to a string
                 let (input, field_value) = take(size as usize)(input)?;
                 let mut value = Vec::new();

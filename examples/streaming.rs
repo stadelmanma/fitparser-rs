@@ -85,9 +85,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         // shift remaining data to the front of buffer prior to appending more
         rem = buffer.len();
         let tmp = Vec::from(buffer);
-        for i in 0..rem {
-            data[i] = tmp[i];
-        }
+        data[..rem].clone_from_slice(&tmp[..rem]);
     }
 }
 

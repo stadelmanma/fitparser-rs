@@ -6,8 +6,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
-use std::iter::FromIterator;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 /// Parse FIT formatted files and output their data in the JSON format
@@ -38,12 +37,11 @@ impl FitDataMap {
     fn new(record: fitparser::FitDataRecord) -> Self {
         FitDataMap {
             kind: record.kind(),
-            fields: BTreeMap::from_iter(
-                record
-                    .into_vec()
-                    .into_iter()
-                    .map(|f| (f.name().to_owned(), fitparser::ValueWithUnits::from(f))),
-            ),
+            fields: record
+                .into_vec()
+                .into_iter()
+                .map(|f| (f.name().to_owned(), fitparser::ValueWithUnits::from(f)))
+                .collect(),
         }
     }
 }
@@ -69,11 +67,11 @@ impl OutputLocation {
 
     fn write_json_file(
         &self,
-        filename: &PathBuf,
+        filename: &Path,
         data: Vec<fitparser::FitDataRecord>,
     ) -> Result<(), Box<dyn Error>> {
         // convert data to a name: {value, units} map before serializing
-        let data: Vec<FitDataMap> = data.into_iter().map(|r| FitDataMap::new(r)).collect();
+        let data: Vec<FitDataMap> = data.into_iter().map(FitDataMap::new).collect();
         let json = serde_json::to_string(&data)?;
 
         let outname = match self {
@@ -101,10 +99,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     let output_loc = opt
         .output
         .map_or(OutputLocation::Inplace, OutputLocation::new);
-    let collect_all = match output_loc {
-        OutputLocation::LocalFile(_) => true,
-        _ => false,
-    };
+    let collect_all = matches!(output_loc, OutputLocation::LocalFile(_));
     if opt.files.is_empty() {
         let mut stdin = io::stdin();
         let data = fitparser::from_reader(&mut stdin)?;

@@ -271,7 +271,7 @@ impl convert::TryInto<i64> for Value {
     }
 }
 
-/// Describes a field value along with it's defined units (if any), this struct is useful for
+/// Describes a field value along with its defined units (if any), this struct is useful for
 /// serializing data in a key-value store where the key is either the name or definition number
 /// since it can be created from a `FitDataField` with minimal data cloning.
 #[derive(Clone, Debug, Serialize)]

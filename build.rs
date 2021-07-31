@@ -18,21 +18,26 @@ struct FieldTypeDefintion {
     name: String,
     titlized_name: String,
     base_type: &'static str,
+    comment: Option<String>,
     variant_map: BTreeMap<i64, FieldTypeVariant>,
 }
 
 impl FieldTypeDefintion {
-    fn new(name: String, base_type: &'static str) -> Self {
+    fn new(name: String, base_type: &'static str, comment: Option<String>) -> Self {
         FieldTypeDefintion {
             name: name.clone(),
             titlized_name: titlecase_string(&name),
             base_type,
+            comment,
             variant_map: BTreeMap::new(),
         }
     }
 
     /// Generate an enum from the field type variants
     fn generate_enum(&self, out: &mut File) -> Result<(), std::io::Error> {
+        if let Some(v) = &self.comment {
+            writeln!(out, "/// {}", v)?;
+        }
         writeln!(
             out,
             "#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]"
@@ -178,7 +183,7 @@ impl FieldTypeVariant {
 
         // First letter isn't between A-Z in ASCII
         let first_let = titlized_name.as_bytes()[0];
-        if first_let < 65 || first_let > 90 {
+        if !(65..=90).contains(&first_let) {
             titlized_name = format!("Name{}", titlized_name);
         }
 
@@ -197,13 +202,15 @@ impl FieldTypeVariant {
 #[derive(Clone, Debug)]
 struct MessageDefinition {
     name: String,
+    comment: Option<String>,
     field_map: BTreeMap<u8, MessageFieldDefinition>,
 }
 
 impl MessageDefinition {
-    fn new(name: &str) -> Self {
+    fn new(name: &str, comment: Option<String>) -> Self {
         MessageDefinition {
             name: name.to_string(),
+            comment,
             field_map: BTreeMap::new(),
         }
     }
@@ -214,7 +221,7 @@ impl MessageDefinition {
                 return field;
             }
         }
-        panic!(format!("No field with name: {:?}", name));
+        panic!("No field with name: {:?}", name);
     }
 
     fn function_name(&self) -> String {
@@ -222,10 +229,13 @@ impl MessageDefinition {
     }
 
     fn write_function_def(&self, out: &mut File) -> Result<(), std::io::Error> {
+        if let Some(v) = &self.comment {
+            writeln!(out, "/// {}", v)?;
+        }
         writeln!(out, "pub fn {}() -> MessageInfo {{", self.function_name())?;
         writeln!(out, "    let mut fields = HashMap::new();")?;
         for field in self.field_map.values() {
-            field.generate_field_info_struct(out, &self, "field")?;
+            field.generate_field_info_struct(out, self, "field")?;
             writeln!(out, "fields.insert({}, field);", field.def_number)?;
         }
         writeln!(out, "    MessageInfo {{")?;
@@ -396,10 +406,7 @@ fn base_type_to_rust_type(base_type_str: &str) -> &'static str {
         "sint32" => "i32",
         "uint32" => "u32",
         "uint32z" => "u32",
-        _ => panic!(format!(
-            "unsupported base_type for enum field: {}",
-            base_type_str
-        )),
+        _ => panic!("unsupported base_type for enum field: {}", base_type_str),
     }
 }
 
@@ -499,15 +506,16 @@ fn process_types(sheet: Range<DataType>) -> Vec<FieldTypeDefintion> {
             // extract enum name
             let enum_name = match row[0].get_string() {
                 Some(v) => v.to_string(),
-                None => panic!(format!("Enum type name must be a string row={:?}.", row)),
+                None => panic!("Enum type name must be a string row={:?}.", row),
             };
 
-            // extract base type and convert to it's rust equivalent
+            // extract base type and convert to its rust equivalent
             let rust_type = match row[1].get_string() {
                 Some(v) => base_type_to_rust_type(v),
-                None => panic!(format!("Base type name must be a string row={:?}.", row)),
+                None => panic!("Base type name must be a string row={:?}.", row),
             };
-            field_types.push(FieldTypeDefintion::new(enum_name, rust_type));
+            let comment = row[4].get_string().map(|v| v.to_string());
+            field_types.push(FieldTypeDefintion::new(enum_name, rust_type, comment));
         } else if !row[2].is_empty() {
             let field_type = match field_types.last_mut() {
                 Some(v) => v,
@@ -517,7 +525,7 @@ fn process_types(sheet: Range<DataType>) -> Vec<FieldTypeDefintion> {
             // extract enum name
             let name = match row[2].get_string() {
                 Some(v) => v.to_string(),
-                None => panic!(format!("Enum variant name must be a string row={:?}.", row)),
+                None => panic!("Enum variant name must be a string row={:?}.", row),
             };
 
             // handle mix of numeric and hex string data values
@@ -526,16 +534,10 @@ fn process_types(sheet: Range<DataType>) -> Vec<FieldTypeDefintion> {
                 DataType::Int(v) => *v,
                 DataType::String(v) => i64::from_str_radix(&v[2..], 16).unwrap(),
                 _ => {
-                    panic!(format!(
-                        "Unsupported enum variant value data type row={:?}.",
-                        row
-                    ));
+                    panic!("Unsupported enum variant value data type row={:?}.", row);
                 }
             };
-            let comment = match row[4].get_string() {
-                Some(v) => Some(v.to_string()),
-                None => None,
-            };
+            let comment = row[4].get_string().map(|v| v.to_string());
             field_type.variant_map.insert(
                 value,
                 FieldTypeVariant {
@@ -596,11 +598,8 @@ fn new_message_field_definition(row: &[DataType]) -> MessageFieldDefinition {
     let ftype = row[3]
         .get_string()
         .unwrap_or_else(|| panic!("Field type must be a string, row={:?}.", row));
-    let components = parse_message_field_components(&row);
-    let comment = match row[13].get_string() {
-        Some(v) => Some(v.to_string()),
-        None => None,
-    };
+    let components = parse_message_field_components(row);
+    let comment = row[13].get_string().map(|v| v.to_string());
 
     MessageFieldDefinition {
         def_number,
@@ -626,7 +625,7 @@ fn process_messages(sheet: Range<DataType>) -> Vec<MessageDefinition> {
     // parse first message row to initialize first message to prevent unitialized compile error in loop
     let row = rows.next().unwrap();
     if let Some(v) = row[0].get_string() {
-        msg = MessageDefinition::new(v);
+        msg = MessageDefinition::new(v, row[13].get_string().map(|v| v.to_string()));
     } else {
         panic!("Message name must be a string row={:?}.", row);
     }
@@ -637,7 +636,7 @@ fn process_messages(sheet: Range<DataType>) -> Vec<MessageDefinition> {
         if !row[0].is_empty() {
             if let Some(v) = row[0].get_string() {
                 messages.push(msg);
-                msg = MessageDefinition::new(v);
+                msg = MessageDefinition::new(v, row[13].get_string().map(|v| v.to_string()));
             } else {
                 panic!("Message name must be a string row={:?}.", row);
             }
@@ -757,7 +756,7 @@ fn write_types_files(profile: &FitProfile) -> Result<(), std::io::Error> {
     }
     generate_main_field_type_enum(&profile.field_types, &mut out)?;
 
-    rustfmt(&fname);
+    rustfmt(fname);
     Ok(())
 }
 
@@ -801,7 +800,7 @@ fn write_messages_file(profile: &FitProfile) -> Result<(), std::io::Error> {
     // output MesgNum implementation to allow parser to fetch info
     create_mesg_num_to_mesg_info_fn(&profile.messages, &mut out)?;
 
-    rustfmt(&fname);
+    rustfmt(fname);
     Ok(())
 }
 

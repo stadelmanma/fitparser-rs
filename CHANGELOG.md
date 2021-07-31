@@ -24,7 +24,7 @@ to batch processing (see examples/streaming.rs).
 ## v0.2.0
 * Improve the API to allow manipulating the data with less cloning
 * Expose the actual MesgNum enum value to the user in the `kind` field
-of each FitDataRecord instead of it's name.
+of each FitDataRecord instead of its name.
 * Upated FitDataRecord to store fields as a Vec, sorted by definition
 number. Each field contains the name, number, value and units (if defined).
 * Rewrote parser logic to more closely resemble how serde deserializers are
