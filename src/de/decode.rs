@@ -9,7 +9,7 @@ use chrono::{DateTime, Duration, Local, NaiveDate, TimeZone};
 use std::collections::HashMap;
 use std::convert::{From, TryInto};
 use std::f64::EPSILON;
-use std::iter::{FromIterator, IntoIterator};
+use std::iter::IntoIterator;
 
 impl Value {
     /// Convert the value into a vector of bytes
@@ -149,11 +149,11 @@ impl Decoder {
         // initialize process queue with field info for parsed, valid fields.
         let msg_num = mesg_info.global_message_number().as_u16();
         let mut data_fields = Vec::new();
-        let mut data_map: HashMap<u8, Value> = HashMap::from_iter(
-            data_map
-                .iter()
-                .filter_map(|(key, val)| val.as_ref().map(|v| (*key, v.clone()))),
-        );
+        let mut data_map: HashMap<u8, Value> = data_map
+            .iter()
+            .filter_map(|(key, val)| val.as_ref().map(|v| (*key, v.clone())))
+            .collect();
+
         let mut process_queue: Vec<(u8, Option<FieldInfo>)> = data_map
             .keys()
             .map(|k| (*k, get_message_field(&mesg_info, *k, &data_map).cloned()))
@@ -184,10 +184,7 @@ impl Decoder {
                         let dest_def_number = comp_info.dest_def_number();
                         let old_field_info =
                             get_message_field(&mesg_info, comp_info.dest_def_number(), &data_map);
-                        let new_field_info = match old_field_info {
-                            Some(info) => Some(comp_info.to_field_info(info)),
-                            None => None,
-                        };
+                        let new_field_info = old_field_info.map(|i| comp_info.to_field_info(i));
                         process_queue.push((dest_def_number, new_field_info));
                     }
                 }

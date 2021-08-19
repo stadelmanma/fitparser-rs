@@ -335,7 +335,7 @@ pub fn fit_message<'a>(
     match header.message_type {
         FitMessageType::Data => {
             if let Some(def_mesg) = definitions.get(&header.local_message_number) {
-                let (input, (fields, developer_fields)) = data_message_fields(input, &def_mesg)?;
+                let (input, (fields, developer_fields)) = data_message_fields(input, def_mesg)?;
                 Ok((
                     input,
                     FitMessage::Data(FitDataMessage {
